@@ -13,10 +13,16 @@ func emailWorker(id int, ch <-chan Receipient, wg *sync.WaitGroup) {
 	for receipient := range ch {
 		smtpHost := "localhost"
 		smtpPort := "1025"
-		formattedMessage := fmt.Sprintf("To: %s\r\nSubject: Test Email\r\n\r\n%s\r\n", receipient.Email, "Just testing email campaign")
-		msg := []byte(formattedMessage)
+		// formattedMessage := fmt.Sprintf("To: %s\r\nSubject: Test Email\r\n\r\n%s\r\n", receipient.Email, "Just testing email campaign")
+		// msg := []byte(formattedMessage)
+		msg, err := executeTemplate(receipient)
 
-		err := smtp.SendMail(smtpHost+":"+smtpPort, nil, "chandra@codersguy.com", []string{receipient.Email}, msg) // in built go package
+		if err != nil {
+			log.Printf("Worker :%d Error parsing template for %s", id, receipient.Email)
+			continue
+			// later on add it to dlq
+		}
+		err = smtp.SendMail(smtpHost+":"+smtpPort, nil, "chandra@codersguy.com", []string{receipient.Email}, []byte(msg)) // in built go package
 
 		if err != nil {
 			log.Fatal(err)
